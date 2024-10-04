@@ -14,6 +14,7 @@ try {
 const path = require('path');
 const { Events } = require('./../util/Constants');
 const BaseAuthStrategy = require('./BaseAuthStrategy');
+var AdmZip = require('adm-zip'); //
 
 /**
  * Remote-based authentication
@@ -154,13 +155,15 @@ class RemoteAuth extends BaseAuthStrategy {
     }
 
     async unCompressSession(compressedSessionPath) {
-        var stream = fs.createReadStream(compressedSessionPath);
         await new Promise((resolve, reject) => {
-            stream.pipe(unzipper.Extract({
-                path: this.userDataDir
-            }))
-                .on('error', err => reject(err))
-                .on('finish', () => resolve());
+            const zip = new AdmZip(compressedSessionPath);
+            zip.extractAllToAsync(this.userDataDir, true, false, (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
         });
         await fs.promises.unlink(compressedSessionPath);
     }
